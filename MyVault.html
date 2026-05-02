@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MyVault">
+<title>MyVault</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080b11;--s1:#0f1420;--s2:#161d2e;--s3:#1d2640;
+  --bdr:#263050;--bdr2:#1d2640;
+  --acc:#3d7fff;--acc2:#5b96ff;--acc-glow:rgba(61,127,255,.25);
+  --ok:#2ecc8a;--err:#ff4757;--warn:#ffb830;--purple:#8b5cf6;
+  --tx:#eef2ff;--tx2:#7b8ab8;--tx3:#3d4f7a;
+  --r:14px;--r2:10px;
+  --f:'DM Sans',sans-serif;--fh:'Syne',sans-serif;--m:'DM Mono',monospace;
+  --sh:0 4px 24px rgba(0,0,0,.4);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{color:var(--tx);font-family:var(--f);font-size:14px}
+
+/* ═══ APP SHELL ═══ */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+
+/* ═══ LOCK SCREEN ═══ */
+#lock{position:absolute;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background-image:radial-gradient(ellipse at 30% 20%,rgba(61,127,255,.08) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(139,92,246,.06) 0%,transparent 60%)}
+.lock-logo{font-family:var(--fh);font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.lock-logo span{color:var(--acc)}
+.lock-sub{color:var(--tx2);font-size:13px;margin-bottom:44px;font-weight:400}
+.pin-dots{display:flex;gap:16px;margin-bottom:36px}
+.pd{width:14px;height:14px;border-radius:50%;border:2px solid var(--bdr);transition:all .2s cubic-bezier(.34,1.56,.64,1)}
+.pd.f{background:var(--acc);border-color:var(--acc);transform:scale(1.15);box-shadow:0 0 12px var(--acc-glow)}
+.pd.e{background:var(--err);border-color:var(--err)}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:240px}
+.pb{background:var(--s2);border:1px solid var(--bdr2);color:var(--tx);border-radius:14px;padding:17px;font-size:22px;font-weight:500;cursor:pointer;font-family:var(--fh);transition:all .15s;user-select:none}
+.pb:active{background:var(--s3);transform:scale(.93);border-color:var(--acc)}
+.pb.sm{font-size:13px;color:var(--tx2);font-family:var(--f)}
+.lock-hint{color:var(--tx3);font-size:11px;margin-top:20px;letter-spacing:.3px}
+.lock-err{color:var(--err);font-size:12px;margin-top:8px;opacity:0;transition:opacity .2s}
+.lock-err.show{opacity:1}
+
+/* ═══ HEADER ═══ */
+.hdr{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr2);flex-shrink:0;background:rgba(8,11,17,.8);backdrop-filter:blur(12px)}
+.logo{font-family:var(--fh);font-size:18px;font-weight:800;letter-spacing:-.5px}
+.logo span{color:var(--acc)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.sec-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2);background:var(--s2);padding:5px 10px;border-radius:20px;border:1px solid var(--bdr2);font-family:var(--f)}
+.sec-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ═══ CONTENT AREA ═══ */
+.cont{flex:1;overflow:hidden;position:relative}
+.scr{position:absolute;inset:0;overflow-y:auto;padding:16px 18px 20px;display:none;-webkit-overflow-scrolling:touch}
+.scr.on{display:block}
+
+/* ═══ TABS ═══ */
+.tabs{display:flex;border-top:1px solid var(--bdr2);flex-shrink:0;background:rgba(15,20,32,.95);backdrop-filter:blur(12px);padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 7px;cursor:pointer;color:var(--tx3);font-size:8.5px;font-weight:600;border:none;background:none;letter-spacing:.5px;text-transform:uppercase;font-family:var(--fh);transition:color .2s;position:relative}
+.tab svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:all .2s}
+.tab.on{color:var(--acc)}
+.tab.on svg{filter:drop-shadow(0 0 5px var(--acc-glow))}
+.tab-ink{position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--acc);border-radius:0 0 2px 2px;transition:width .25s cubic-bezier(.34,1.56,.64,1)}
+.tab.on .tab-ink{width:24px}
+
+/* ═══ SECTION HEADER ═══ */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.st{font-family:var(--fh);font-size:20px;font-weight:700;letter-spacing:-.4px}
+.st-sub{font-size:11px;color:var(--tx2);margin-top:2px;font-weight:400;font-family:var(--f)}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;transition:border-color .2s}
+.card:active{border-color:var(--acc)}
+.crow{display:flex;align-items:center;gap:10px}
+.crow-top{align-items:flex-start}
+.ci{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.ct{font-weight:600;font-size:13px;margin-bottom:2px;font-family:var(--fh);letter-spacing:-.2px}
+.cs{font-size:11px;color:var(--tx2);font-family:var(--f)}
+.pw-mono{font-family:var(--m);font-size:11px;color:var(--tx2);letter-spacing:1px;margin-top:3px}
+
+/* ═══ BADGES ═══ */
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;margin-top:3px;letter-spacing:.2px;font-family:var(--fh)}
+.bb{background:rgba(61,127,255,.15);color:#5b96ff}
+.bg{background:rgba(46,204,138,.12);color:#2ecc8a}
+.br{background:rgba(255,71,87,.12);color:#ff4757}
+.bo{background:rgba(255,184,48,.12);color:#ffb830}
+.bpu{background:rgba(139,92,246,.12);color:#a78bfa}
+
+/* ═══ BUTTONS ═══ */
+.btn-add{display:flex;align-items:center;gap:5px;background:var(--acc);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fh);letter-spacing:.3px;transition:all .15s;box-shadow:0 2px 12px var(--acc-glow)}
+.btn-add:active{transform:scale(.95);background:var(--acc2)}
+.ib{background:transparent;border:1px solid var(--bdr);color:var(--tx2);border-radius:6px;padding:4px 8px;font-size:10px;font-weight:500;cursor:pointer;font-family:var(--f);transition:all .15s;white-space:nowrap}
+.ib:active{border-color:var(--acc);color:var(--acc)}
+.ib.del{border-color:rgba(255,71,87,.3);color:var(--err)}
+.ib.del:active{background:rgba(255,71,87,.1)}
+.ib.ok{border-color:rgba(46,204,138,.3);color:var(--ok)}
+
+/* ═══ SEARCH BAR ═══ */
+.sbar{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--bdr2);border-radius:10px;padding:8px 12px;margin-bottom:12px}
+.sbar input{background:none;border:none;color:var(--tx);font-size:13px;font-family:var(--f);outline:none;flex:1}
+.sbar input::placeholder{color:var(--tx3)}
+.sbar-icon{font-size:14px;flex-shrink:0}
+
+/* ═══ BOTTOM SHEET / OVERLAY ═══ */
+.ov{position:absolute;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:flex-end;backdrop-filter:blur(4px)}
+.ov.open{display:flex;animation:fadeIn .2s ease}
+.sheet{background:var(--s1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));width:100%;max-height:90%;overflow-y:auto;border-top:1px solid var(--bdr);animation:slideUp .28s cubic-bezier(.34,1.2,.64,1)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet-hdr{font-family:var(--fh);font-size:17px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;letter-spacing:-.3px}
+.sheet-drag{width:36px;height:4px;background:var(--bdr);border-radius:2px;margin:0 auto 16px;display:block}
+.xb{background:var(--s3);border:none;color:var(--tx2);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.xb:active{background:var(--err);color:#fff}
+
+/* ═══ FORM FIELDS ═══ */
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:10px;color:var(--tx2);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;font-family:var(--fh)}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--s2);border:1px solid var(--bdr);border-radius:9px;padding:10px 13px;color:var(--tx);font-size:13px;font-family:var(--f);outline:none;transition:border-color .2s;-webkit-appearance:none}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-glow)}
+.fld textarea{resize:vertical;min-height:65px;line-height:1.5}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237b8ab8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.btn-save{width:100%;background:var(--acc);color:#fff;border:none;border-radius:11px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--fh);margin-top:6px;letter-spacing:.2px;transition:all .15s;box-shadow:0 4px 16px var(--acc-glow)}
+.btn-save:active{transform:scale(.98);background:var(--acc2)}
+.form-err{color:var(--err);font-size:11px;margin-top:8px;text-align:center;display:none}
+
+/* ═══ CONFIRM DIALOG ═══ */
+.cv{position:absolute;inset:0;background:rgba(0,0,0,.78);z-index:400;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px)}
+.cv.open{display:flex;animation:fadeIn .2s ease}
+.cb{background:var(--s2);border:1px solid var(--bdr);border-radius:18px;padding:22px;width:100%;max-width:300px;animation:slideUp .25s ease}
+.cb-icon{font-size:36px;text-align:center;margin-bottom:10px}
+.cb-title{font-family:var(--fh);font-weight:700;font-size:15px;margin-bottom:6px;text-align:center;letter-spacing:-.2px}
+.cb-msg{font-size:12px;color:var(--tx2);margin-bottom:18px;text-align:center;line-height:1.5}
+.cb-btns{display:flex;gap:9px}
+.cb-btns button{flex:1;padding:11px;border-radius:9px;border:none;cursor:pointer;font-family:var(--fh);font-size:13px;font-weight:700;transition:all .15s}
+.cb-no{background:var(--s3);color:var(--tx)}
+.cb-yes{background:var(--err);color:#fff;box-shadow:0 2px 10px rgba(255,71,87,.3)}
+.cb-yes:active{transform:scale(.97)}
+
+/* ═══ DASHBOARD ═══ */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.dc{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:14px;position:relative;overflow:hidden}
+.dc::before{content:'';position:absolute;top:-20px;right:-20px;width:60px;height:60px;border-radius:50%;opacity:.06}
+.dc.pw::before{background:var(--acc)}
+.dc.pay::before{background:var(--ok)}
+.dc.td::before{background:var(--warn)}
+.dc.ex::before{background:var(--purple)}
+.dc-num{font-family:var(--fh);font-size:28px;font-weight:800;line-height:1;margin:4px 0 2px;letter-spacing:-1px}
+.dc-lbl{font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;font-weight:600;font-family:var(--fh)}
+.dc-sub{font-size:10px;color:var(--tx3);margin-top:1px}
+.qa-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.qa{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:12px 8px;text-align:center;cursor:pointer;font-size:10px;color:var(--tx2);transition:all .2s;font-weight:600;font-family:var(--fh);letter-spacing:.3px}
+.qa:active{border-color:var(--acc);color:var(--acc);background:var(--s2)}
+.qa-icon{font-size:20px;margin-bottom:5px}
+.rec-lbl{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px;font-family:var(--fh)}
+
+/* ═══ EXPENSE SUMMARY ═══ */
+.esum{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:none;background-image:linear-gradient(135deg,rgba(139,92,246,.05) 0%,transparent 70%)}
+.esum-lbl{font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;font-weight:600;font-family:var(--fh);margin-bottom:4px}
+.esum-amt{font-family:var(--fh);font-size:30px;font-weight:800;letter-spacing:-1px}
+
+/* ═══ FILE GRID ═══ */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fc{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:14px;text-align:center}
+.fc-icon{font-size:28px;margin-bottom:7px}
+.fc-name{font-size:11px;font-weight:600;word-break:break-all;font-family:var(--fh);letter-spacing:-.1px}
+.fc-size{font-size:10px;color:var(--tx2);margin-top:2px}
+
+/* ═══ REPORT BUTTONS ═══ */
+.rbtn{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:14px 15px;margin-bottom:9px;cursor:pointer;width:100%;text-align:left;font-family:var(--f);color:var(--tx);transition:all .2s}
+.rbtn:active{border-color:var(--acc);background:var(--s2)}
+.ri{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.rbtn-title{font-weight:600;font-size:13px;font-family:var(--fh);letter-spacing:-.1px}
+.rbtn-sub{font-size:11px;color:var(--tx2);margin-top:1px}
+.rbtn-arrow{margin-left:auto;color:var(--tx3);font-size:16px}
+.rep-out{display:none;margin-top:14px}
+.rep-card{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);padding:15px}
+.rep-actions{display:flex;gap:8px;margin-bottom:12px}
+.rep-text{font-size:10px;font-family:var(--m);color:var(--tx2);white-space:pre-wrap;line-height:1.7;max-height:300px;overflow-y:auto}
+
+/* ═══ SETTINGS ═══ */
+.set-section{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.set-section-lbl{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;padding:12px 14px 8px;font-family:var(--fh);border-bottom:1px solid var(--bdr2)}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--bdr2)}
+.srow:last-child{border-bottom:none}
+.srow-t{font-weight:600;font-size:13px;font-family:var(--fh);letter-spacing:-.1px}
+.srow-s{font-size:10px;color:var(--tx2);margin-top:2px;font-family:var(--f)}
+.sbtn{background:var(--s3);border:1px solid var(--bdr);color:var(--tx);border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fh);transition:all .15s;white-space:nowrap}
+.sbtn:active{background:var(--s2)}
+.sbtn.danger{color:var(--err);border-color:rgba(255,71,87,.3)}
+.sbtn.ok{color:var(--ok);border-color:rgba(46,204,138,.3)}
+
+/* ═══ EMPTY STATE ═══ */
+.empty{text-align:center;padding:40px 20px;color:var(--tx2)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.6}
+.empty-text{font-size:12px;line-height:1.6;font-family:var(--f)}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s2);border:1px solid var(--acc);color:var(--tx);padding:9px 16px;border-radius:10px;font-size:12px;font-weight:600;z-index:999;opacity:0;pointer-events:none;transition:all .3s;white-space:nowrap;font-family:var(--fh);letter-spacing:.1px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+
+/* ═══ INSTRUCTIONS BANNER ═══ */
+.install-banner{background:linear-gradient(135deg,rgba(61,127,255,.15),rgba(139,92,246,.1));border:1px solid rgba(61,127,255,.3);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:none}
+.install-banner.show{display:block}
+.ib-title{font-family:var(--fh);font-size:12px;font-weight:700;margin-bottom:4px;letter-spacing:-.1px}
+.ib-text{font-size:11px;color:var(--tx2);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════ LOCK SCREEN ══════════ -->
+<div id="lock">
+  <div class="lock-logo">My<span>Vault</span></div>
+  <div class="lock-sub">Enter your PIN to unlock</div>
+  <div class="pin-dots" id="pdots">
+    <div class="pd"></div><div class="pd"></div><div class="pd"></div><div class="pd"></div>
+  </div>
+  <div class="pinpad">
+    <button class="pb" onclick="pp('1')">1</button>
+    <button class="pb" onclick="pp('2')">2</button>
+    <button class="pb" onclick="pp('3')">3</button>
+    <button class="pb" onclick="pp('4')">4</button>
+    <button class="pb" onclick="pp('5')">5</button>
+    <button class="pb" onclick="pp('6')">6</button>
+    <button class="pb" onclick="pp('7')">7</button>
+    <button class="pb" onclick="pp('8')">8</button>
+    <button class="pb" onclick="pp('9')">9</button>
+    <button class="pb sm" onclick="pp('bio')">👁 Face ID</button>
+    <button class="pb" onclick="pp('0')">0</button>
+    <button class="pb sm" onclick="pp('del')">⌫ Del</button>
+  </div>
+  <div class="lock-hint" id="lhint">Default PIN: 1234</div>
+  <div class="lock-err" id="lerr">Incorrect PIN. Try again.</div>
+</div>
+
+<!-- ══════════ HEADER ══════════ -->
+<div class="hdr">
+  <div class="logo">My<span>Vault</span></div>
+  <div class="hdr-right">
+    <div class="sec-badge"><div class="sec-dot"></div>Secured</div>
+  </div>
+</div>
+
+<!-- ══════════ CONTENT ══════════ -->
+<div class="cont" id="mc">
+
+  <!-- HOME -->
+  <div class="scr on" id="scr-home">
+    <div class="sh" style="margin-top:4px">
+      <div>
+        <div class="st">Overview</div>
+        <div class="st-sub">Your personal data hub</div>
+      </div>
+    </div>
+
+    <div class="install-banner" id="install-tip">
+      <div class="ib-title">📱 Add to Home Screen</div>
+      <div class="ib-text">Open this file in <strong>Safari</strong> → tap the Share button ↑ → "Add to Home Screen" to use like an app!</div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dc pw">
+        <div class="dc-lbl">Passwords</div>
+        <div class="dc-num" id="d-pw">0</div>
+        <div class="dc-sub">saved entries</div>
+      </div>
+      <div class="dc pay">
+        <div class="dc-lbl">Due Soon</div>
+        <div class="dc-num" id="d-pay">0</div>
+        <div class="dc-sub">payments pending</div>
+      </div>
+      <div class="dc td">
+        <div class="dc-lbl">To-Do</div>
+        <div class="dc-num" id="d-td">0</div>
+        <div class="dc-sub">tasks open</div>
+      </div>
+      <div class="dc ex">
+        <div class="dc-lbl">Expenses</div>
+        <div class="dc-num" id="d-ex">€0</div>
+        <div class="dc-sub">this month</div>
+      </div>
+    </div>
+
+    <div class="qa-row">
+      <div class="qa" onclick="go('passwords');oF('pw')"><div class="qa-icon">🔑</div>Password</div>
+      <div class="qa" onclick="go('payments');oF('pay')"><div class="qa-icon">💳</div>Payment</div>
+      <div class="qa" onclick="go('todos');oF('todo')"><div class="qa-icon">✅</div>Task</div>
+    </div>
+
+    <div class="rec-lbl">Recent Activity</div>
+    <div id="d-rec"></div>
+  </div>
+
+  <!-- PASSWORDS -->
+  <div class="scr" id="scr-passwords">
+    <div class="sh"><div class="st">🔑 Vault</div><button class="btn-add" onclick="oF('pw')">+ Add</button></div>
+    <div class="sbar">
+      <span class="sbar-icon">🔍</span>
+      <input placeholder="Search passwords..." oninput="rPw(this.value)" id="pw-q">
+    </div>
+    <div id="pw-list"></div>
+  </div>
+
+  <!-- PAYMENTS -->
+  <div class="scr" id="scr-payments">
+    <div class="sh"><div class="st">💳 Payments</div><button class="btn-add" onclick="oF('pay')">+ Add</button></div>
+    <div id="pay-list"></div>
+  </div>
+
+  <!-- TODOS -->
+  <div class="scr" id="scr-todos">
+    <div class="sh"><div class="st">✅ To-Do</div><button class="btn-add" onclick="oF('todo')">+ Add</button></div>
+    <div id="td-list"></div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="scr" id="scr-expenses">
+    <div class="sh"><div class="st">💰 Expenses</div><button class="btn-add" onclick="oF('exp')">+ Add</button></div>
+    <div class="esum" id="esum">
+      <div class="esum-lbl">This Month Total</div>
+      <div class="esum-amt" id="etot">€0.00</div>
+    </div>
+    <div id="ex-list"></div>
+  </div>
+
+  <!-- FILES -->
+  <div class="scr" id="scr-files">
+    <div class="sh"><div class="st">📁 Files</div><button class="btn-add" onclick="document.getElementById('fi').click()">+ Upload</button></div>
+    <input type="file" id="fi" style="display:none" accept="image/*,application/pdf" onchange="uploadF(this)">
+    <div class="fgrid" id="flist"></div>
+    <div id="femp" class="empty"><div class="empty-icon">📁</div><div class="empty-text">No files saved yet.<br>Upload PDFs or photos from your camera.</div></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="scr" id="scr-reports">
+    <div class="sh"><div class="st">📊 Reports</div></div>
+    <button class="rbtn" onclick="gRep('payments')">
+      <div class="ri" style="background:rgba(61,127,255,.12)">📅</div>
+      <div><div class="rbtn-title">Payments Report</div><div class="rbtn-sub">Upcoming & overdue payments</div></div>
+      <div class="rbtn-arrow">›</div>
+    </button>
+    <button class="rbtn" onclick="gRep('expenses')">
+      <div class="ri" style="background:rgba(139,92,246,.12)">💰</div>
+      <div><div class="rbtn-title">Expenses Report</div><div class="rbtn-sub">Monthly breakdown by category</div></div>
+      <div class="rbtn-arrow">›</div>
+    </button>
+    <button class="rbtn" onclick="gRep('todos')">
+      <div class="ri" style="background:rgba(255,184,48,.12)">✅</div>
+      <div><div class="rbtn-title">To-Do Report</div><div class="rbtn-sub">All tasks and their status</div></div>
+      <div class="rbtn-arrow">›</div>
+    </button>
+    <button class="rbtn" onclick="gRep('all')">
+      <div class="ri" style="background:rgba(46,204,138,.12)">📋</div>
+      <div><div class="rbtn-title">Full Summary</div><div class="rbtn-sub">Everything in one report</div></div>
+      <div class="rbtn-arrow">›</div>
+    </button>
+    <div class="rep-out" id="rout">
+      <div class="rep-card">
+        <div class="rep-actions">
+          <button class="ib ok" onclick="cpRep()">📋 Copy</button>
+          <button class="ib" style="border-color:rgba(61,127,255,.4);color:var(--acc)" onclick="shRep()">↗ Share / WhatsApp</button>
+        </div>
+        <pre class="rep-text" id="rtxt"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="scr" id="scr-settings">
+    <div class="sh"><div class="st">⚙️ Settings</div></div>
+
+    <div class="set-section">
+      <div class="set-section-lbl">Security</div>
+      <div class="srow">
+        <div><div class="srow-t">Change PIN</div><div class="srow-s">Update your 4-digit unlock code</div></div>
+        <button class="sbtn" onclick="oF('pin')">Change</button>
+      </div>
+      <div class="srow">
+        <div><div class="srow-t">View PIN</div><div class="srow-s" id="pinshow">••••</div></div>
+        <button class="sbtn" id="pinshowbtn" onclick="tgPin(this)">Reveal</button>
+      </div>
+    </div>
+
+    <div class="set-section">
+      <div class="set-section-lbl">Backup & Restore</div>
+      <div class="srow">
+        <div><div class="srow-t">Export Backup</div><div class="srow-s">Save all data as a .json file</div></div>
+        <button class="sbtn ok" onclick="expD()">Export</button>
+      </div>
+      <div class="srow">
+        <div><div class="srow-t">Import Backup</div><div class="srow-s">Restore from a backup file</div></div>
+        <button class="sbtn" onclick="document.getElementById('imp').click()">Import</button>
+      </div>
+      <div class="srow">
+        <div><div class="srow-t">Data Summary</div><div class="srow-s" id="stats">No data yet</div></div>
+      </div>
+    </div>
+
+    <div class="set-section">
+      <div class="set-section-lbl">Add to iPhone Home Screen</div>
+      <div class="srow" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <div class="srow-s" style="line-height:1.6">1. Open this file in <strong style="color:var(--tx)">Safari</strong><br>2. Tap the <strong style="color:var(--tx)">Share ↑</strong> button at the bottom<br>3. Scroll down and tap <strong style="color:var(--tx)">"Add to Home Screen"</strong><br>4. Tap <strong style="color:var(--tx)">Add</strong> — done! 🎉</div>
+      </div>
+    </div>
+
+    <div class="set-section">
+      <div class="set-section-lbl">Danger Zone</div>
+      <div class="srow">
+        <div><div class="srow-t" style="color:var(--err)">Clear All Data</div><div class="srow-s">Permanently delete everything</div></div>
+        <button class="sbtn danger" onclick="clrAll()">Clear</button>
+      </div>
+    </div>
+
+    <input type="file" id="imp" style="display:none" accept=".json" onchange="impD(this)">
+    <div style="text-align:center;margin-top:20px;font-size:10px;color:var(--tx3);font-family:var(--fh);letter-spacing:.3px">MYVAULT v2.0 · ALL DATA STAYS ON YOUR DEVICE</div>
+  </div>
+
+</div><!-- /cont -->
+
+<!-- ══════════ TAB BAR ══════════ -->
+<div class="tabs">
+  <button class="tab on" onclick="go('home')" id="tab-home">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>HOME
+  </button>
+  <button class="tab" onclick="go('passwords')" id="tab-passwords">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>VAULT
+  </button>
+  <button class="tab" onclick="go('payments')" id="tab-payments">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>PAY
+  </button>
+  <button class="tab" onclick="go('todos')" id="tab-todos">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg>TASKS
+  </button>
+  <button class="tab" onclick="go('expenses')" id="tab-expenses">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>MONEY
+  </button>
+  <button class="tab" onclick="go('files')" id="tab-files">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>FILES
+  </button>
+  <button class="tab" onclick="go('settings')" id="tab-settings">
+    <div class="tab-ink"></div>
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>SETTINGS
+  </button>
+</div>
+
+<!-- ══════════ FORMS ══════════ -->
+
+<!-- Password Form -->
+<div class="ov" id="form-pw"><div class="sheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-hdr">Add Password <button class="xb" onclick="cF('pw')">✕</button></div>
+  <div class="fld"><label>Site / App Name *</label><input id="pw-n" placeholder="e.g. Gmail, Instagram, Netflix"></div>
+  <div class="fld"><label>Username / Email</label><input id="pw-u" placeholder="user@email.com" autocomplete="off"></div>
+  <div class="fld"><label>Password</label>
+    <input id="pw-p" type="password" placeholder="••••••••" autocomplete="off">
+    <button class="ib" style="margin-top:6px" onclick="var i=document.getElementById('pw-p');i.type=i.type==='password'?'text':'password'">Show / Hide Password</button>
+  </div>
+  <div class="fld"><label>Notes (optional)</label><textarea id="pw-no" placeholder="Security questions, extra info..."></textarea></div>
+  <button class="btn-save" onclick="savePw()">Save Password</button>
+</div></div>
+
+<!-- Payment Form -->
+<div class="ov" id="form-pay"><div class="sheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-hdr">Add Payment <button class="xb" onclick="cF('pay')">✕</button></div>
+  <div class="fld"><label>Payment Name *</label><input id="pay-n" placeholder="e.g. Netflix, Rent, Electricity"></div>
+  <div class="fld"><label>Amount (€)</label><input id="pay-a" type="number" step="0.01" placeholder="0.00" inputmode="decimal"></div>
+  <div class="fld"><label>Due Date</label><input id="pay-d" type="date"></div>
+  <div class="fld"><label>Recurring</label>
+    <select id="pay-r">
+      <option value="once">One-time</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option>
+    </select>
+  </div>
+  <div class="fld"><label>Notes</label><textarea id="pay-no" placeholder="Account number, reference..."></textarea></div>
+  <button class="btn-save" onclick="savePay()">Save Payment</button>
+</div></div>
+
+<!-- Todo Form -->
+<div class="ov" id="form-todo"><div class="sheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-hdr">Add Task <button class="xb" onclick="cF('todo')">✕</button></div>
+  <div class="fld"><label>Task *</label><input id="td-t" placeholder="What needs to be done?"></div>
+  <div class="fld"><label>Due Date</label><input id="td-d" type="date"></div>
+  <div class="fld"><label>Priority</label>
+    <select id="td-p">
+      <option value="low">🔵 Low</option>
+      <option value="medium">🟡 Medium</option>
+      <option value="high">🔴 High</option>
+    </select>
+  </div>
+  <div class="fld"><label>Notes</label><textarea id="td-no" placeholder="Additional details..."></textarea></div>
+  <button class="btn-save" onclick="saveTd()">Save Task</button>
+</div></div>
+
+<!-- Expense Form -->
+<div class="ov" id="form-exp"><div class="sheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-hdr">Add Expense <button class="xb" onclick="cF('exp')">✕</button></div>
+  <div class="fld"><label>Description *</label><input id="ex-d" placeholder="e.g. Lunch, Groceries, Taxi"></div>
+  <div class="fld"><label>Amount (€)</label><input id="ex-a" type="number" step="0.01" placeholder="0.00" inputmode="decimal"></div>
+  <div class="fld"><label>Category</label>
+    <select id="ex-c">
+      <option>🍕 Food</option>
+      <option>🚗 Transport</option>
+      <option>🛍 Shopping</option>
+      <option>🏥 Health</option>
+      <option>🎬 Entertainment</option>
+      <option>📄 Bills</option>
+      <option>🏠 Housing</option>
+      <option>📦 Other</option>
+    </select>
+  </div>
+  <div class="fld"><label>Date</label><input id="ex-dt" type="date"></div>
+  <div class="fld"><label>Notes</label><textarea id="ex-no" placeholder="Receipt number, details..."></textarea></div>
+  <button class="btn-save" onclick="saveEx()">Save Expense</button>
+</div></div>
+
+<!-- Change PIN Form -->
+<div class="ov" id="form-pin"><div class="sheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-hdr">Change PIN <button class="xb" onclick="cF('pin')">✕</button></div>
+  <div class="fld"><label>Current PIN</label><input id="pin-o" type="password" maxlength="4" placeholder="Enter current 4-digit PIN" inputmode="numeric"></div>
+  <div class="fld"><label>New PIN (4 digits)</label><input id="pin-n" type="password" maxlength="4" placeholder="Enter new 4-digit PIN" inputmode="numeric"></div>
+  <div class="fld"><label>Confirm New PIN</label><input id="pin-c" type="password" maxlength="4" placeholder="Repeat new PIN" inputmode="numeric"></div>
+  <button class="btn-save" onclick="chgPin()">Update PIN</button>
+  <div class="form-err" id="pin-err"></div>
+</div></div>
+
+<!-- ══════════ CONFIRM DIALOG ══════════ -->
+<div class="cv" id="conf">
+  <div class="cb">
+    <div class="cb-icon" id="conf-icon">🗑</div>
+    <div class="cb-title" id="conf-title">Delete Entry</div>
+    <div class="cb-msg" id="conf-msg">Are you sure?</div>
+    <div class="cb-btns">
+      <button class="cb-no" onclick="confNo()">Cancel</button>
+      <button class="cb-yes" onclick="confYes()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="tst"></div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+var PIN = '1234';
+var ent = '';
+var cb = null;
+var D = {passwords:[], payments:[], todos:[], expenses:[], files:[]};
+
+// Load saved data on startup
+(function(){
+  try {
+    var saved = localStorage.getItem('myvault_data');
+    var savedPin = localStorage.getItem('myvault_pin');
+    if (saved) D = JSON.parse(saved);
+    if (savedPin) PIN = savedPin;
+  } catch(e) {}
+  // Show install tip on home
+  if (!navigator.standalone && /iPhone|iPad/.test(navigator.userAgent)) {
+    document.getElementById('install-tip').classList.add('show');
+  }
+})();
+
+function save() {
+  try {
+    localStorage.setItem('myvault_data', JSON.stringify(D));
+    localStorage.setItem('myvault_pin', PIN);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+// LOCK SCREEN
+// ══════════════════════════════════════════
+function pp(v) {
+  if (v === 'bio') { unlock(); return; }
+  if (v === 'del') { ent = ent.slice(0,-1); }
+  else if (ent.length < 4) { ent += v; }
+
+  var dots = document.querySelectorAll('.pd');
+  dots.forEach(function(d,i){ d.classList.toggle('f', i < ent.length); d.classList.remove('e'); });
+
+  if (ent.length === 4) {
+    if (ent === PIN) {
+      setTimeout(unlock, 180);
+    } else {
+      dots.forEach(function(d){ d.classList.add('e'); d.classList.remove('f'); });
+      var err = document.getElementById('lerr');
+      err.classList.add('show');
+      setTimeout(function(){
+        ent = '';
+        dots.forEach(function(d){ d.classList.remove('e','f'); });
+        err.classList.remove('show');
+      }, 700);
+    }
+  }
+}
+
+function unlock() {
+  var ls = document.getElementById('lock');
+  ls.style.opacity = '0';
+  ls.style.transition = 'opacity .35s';
+  setTimeout(function(){ ls.style.display = 'none'; }, 350);
+  rdash(); upStats();
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function go(t) {
+  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('scr-'+t).classList.add('on');
+  document.getElementById('tab-'+t).classList.add('on');
+  if(t==='home') rdash();
+  if(t==='passwords') rPw();
+  if(t==='payments') rPay();
+  if(t==='todos') rTd();
+  if(t==='expenses') rEx();
+  if(t==='files') rFiles();
+  if(t==='settings') upStats();
+}
+
+function oF(f){ document.getElementById('form-'+f).classList.add('open'); }
+function cF(f){
+  document.getElementById('form-'+f).classList.remove('open');
+  var err = document.getElementById('pin-err');
+  if(err) err.style.display='none';
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function tst(m) {
+  var t = document.getElementById('tst');
+  t.textContent = m; t.classList.add('on');
+  setTimeout(function(){ t.classList.remove('on'); }, 2400);
+}
+
+// ══════════════════════════════════════════
+// CONFIRM DIALOG
+// ══════════════════════════════════════════
+function ask(msg, fn, icon) {
+  document.getElementById('conf-icon').textContent = icon || '🗑';
+  document.getElementById('conf-msg').textContent = msg;
+  cb = fn;
+  document.getElementById('conf').classList.add('open');
+}
+function confYes(){ document.getElementById('conf').classList.remove('open'); if(cb) cb(); cb=null; }
+function confNo(){ document.getElementById('conf').classList.remove('open'); cb=null; }
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function cls(ids){ ids.forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; }); }
+function fd(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function fsz(b){ return b<1024?b+'B':b<1048576?Math.round(b/1024)+'KB':(b/1048576).toFixed(1)+'MB'; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function cpTxt(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t); tst('Copied!'); } }
+
+// ══════════════════════════════════════════
+// PASSWORDS
+// ══════════════════════════════════════════
+function savePw() {
+  var n = document.getElementById('pw-n').value.trim();
+  if(!n){ tst('⚠️ Please enter a name'); return; }
+  D.passwords.push({
+    id: Date.now(), name: n,
+    user: document.getElementById('pw-u').value,
+    pass: document.getElementById('pw-p').value,
+    notes: document.getElementById('pw-no').value,
+    show: false
+  });
+  save(); cF('pw'); cls(['pw-n','pw-u','pw-p','pw-no']); rPw(); rdash(); tst('🔑 Password saved');
+}
+
+function rPw(q) {
+  q = q || document.getElementById('pw-q').value || '';
+  var list = document.getElementById('pw-list');
+  var items = D.passwords.filter(function(p){ return !q || p.name.toLowerCase().includes(q.toLowerCase()) || p.user.toLowerCase().includes(q.toLowerCase()); });
+  if(!items.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🔑</div><div class="empty-text">'+(q?'No passwords match your search':'No passwords saved yet.<br>Tap <strong>+ Add</strong> to get started.')+'</div></div>';
+    return;
+  }
+  list.innerHTML = items.map(function(p){
+    return '<div class="card"><div class="crow crow-top">'+
+      '<div class="ci" style="background:rgba(61,127,255,.1)">🔑</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="ct">'+esc(p.name)+'</div>'+
+        '<div class="cs">'+esc(p.user)+'</div>'+
+        '<div class="pw-mono">'+(p.show ? esc(p.pass) : '••••••••••••')+'</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'+
+        '<button class="ib" onclick="tgPw('+p.id+')">'+(p.show?'Hide':'Show')+'</button>'+
+        '<button class="ib" onclick="cpTxt(\''+esc(p.pass)+'\')">Copy</button>'+
+        '<button class="ib del" onclick="delPw('+p.id+')">Delete</button>'+
+      '</div></div></div>';
+  }).join('');
+}
+
+function tgPw(id){ var p=D.passwords.find(function(x){return x.id===id;}); if(p){p.show=!p.show; rPw();} }
+function delPw(id){ ask('Delete this password entry? This cannot be undone.', function(){ D.passwords=D.passwords.filter(function(x){return x.id!==id;}); save(); rPw(); rdash(); tst('Deleted'); }); }
+
+// ══════════════════════════════════════════
+// PAYMENTS
+// ══════════════════════════════════════════
+function savePay() {
+  var n = document.getElementById('pay-n').value.trim();
+  if(!n){ tst('⚠️ Please enter a name'); return; }
+  D.payments.push({
+    id: Date.now(), name: n,
+    amount: parseFloat(document.getElementById('pay-a').value)||0,
+    date: document.getElementById('pay-d').value,
+    recur: document.getElementById('pay-r').value,
+    notes: document.getElementById('pay-no').value,
+    paid: false
+  });
+  save(); cF('pay'); cls(['pay-n','pay-a','pay-d','pay-no']); rPay(); rdash(); tst('💳 Payment saved');
+}
+
+function rPay() {
+  var list = document.getElementById('pay-list');
+  if(!D.payments.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No payments added yet.<br>Track bills, subscriptions & more.</div></div>';
+    return;
+  }
+  var today = new Date().toISOString().split('T')[0];
+  // Sort: unpaid overdue first, then upcoming, then paid
+  var sorted = D.payments.slice().sort(function(a,b){
+    if(a.paid && !b.paid) return 1;
+    if(!a.paid && b.paid) return -1;
+    return (a.date||'') > (b.date||'') ? 1 : -1;
+  });
+  list.innerHTML = sorted.map(function(p){
+    var ov = p.date && p.date < today && !p.paid;
+    var badge = p.paid
+      ? '<span class="bdg bg">✓ Paid</span>'
+      : ov
+        ? '<span class="bdg br">⚠ Overdue · '+fd(p.date)+'</span>'
+        : '<span class="bdg bb">Due '+fd(p.date)+'</span>';
+    return '<div class="card"><div class="crow crow-top">'+
+      '<div class="ci" style="background:rgba(46,204,138,.1)">💳</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="ct">'+esc(p.name)+'</div>'+
+        '<div class="cs">€'+p.amount.toFixed(2)+' · '+p.recur+(p.notes?' · '+esc(p.notes):'')+'</div>'+
+        badge+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'+
+        '<button class="ib '+(p.paid?'':'ok')+'" onclick="tgPd('+p.id+')">'+(p.paid?'Unpay':'Pay ✓')+'</button>'+
+        '<button class="ib del" onclick="delPay('+p.id+')">Delete</button>'+
+      '</div></div></div>';
+  }).join('');
+}
+
+function tgPd(id){ var p=D.payments.find(function(x){return x.id===id;}); if(p){p.paid=!p.paid; save(); rPay(); rdash();} }
+function delPay(id){ ask('Delete this payment entry?', function(){ D.payments=D.payments.filter(function(x){return x.id!==id;}); save(); rPay(); rdash(); tst('Deleted'); }); }
+
+// ══════════════════════════════════════════
+// TODOS
+// ══════════════════════════════════════════
+function saveTd() {
+  var t = document.getElementById('td-t').value.trim();
+  if(!t){ tst('⚠️ Please enter a task'); return; }
+  D.todos.push({
+    id: Date.now(), text: t,
+    date: document.getElementById('td-d').value,
+    pri: document.getElementById('td-p').value,
+    notes: document.getElementById('td-no').value,
+    done: false
+  });
+  save(); cF('todo'); cls(['td-t','td-d','td-no']); rTd(); rdash(); tst('✅ Task saved');
+}
+
+function rTd() {
+  var list = document.getElementById('td-list');
+  if(!D.todos.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No tasks yet.<br>Add your first to-do item!</div></div>';
+    return;
+  }
+  var pc = {low:'bb', medium:'bo', high:'br'};
+  var pi = {low:'🔵', medium:'🟡', high:'🔴'};
+  var sorted = D.todos.slice().sort(function(a,b){ if(a.done&&!b.done) return 1; if(!a.done&&b.done) return -1; var prio={high:0,medium:1,low:2}; return prio[a.pri]-prio[b.pri]; });
+  list.innerHTML = sorted.map(function(t){
+    return '<div class="card" style="'+(t.done?'opacity:.5':'')+'">'+
+      '<div class="crow crow-top" style="gap:8px">'+
+        '<input type="checkbox" '+(t.done?'checked':'')+' style="width:16px;height:16px;accent-color:var(--acc);cursor:pointer;margin-top:1px;flex-shrink:0" onchange="tgTd('+t.id+')">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div class="ct" style="'+(t.done?'text-decoration:line-through;color:var(--tx2)':'')+'">'+esc(t.text)+'</div>'+
+          (t.date?'<div class="cs">Due: '+fd(t.date)+'</div>':'')+
+          (t.notes?'<div class="cs" style="margin-top:2px">'+esc(t.notes)+'</div>':'')+
+          '<span class="bdg '+pc[t.pri]+'" style="margin-top:3px">'+pi[t.pri]+' '+t.pri+'</span>'+
+        '</div>'+
+        '<button class="ib del" onclick="delTd('+t.id+')">Delete</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function tgTd(id){ var t=D.todos.find(function(x){return x.id===id;}); if(t){t.done=!t.done; save(); rTd(); rdash();} }
+function delTd(id){ ask('Delete this task?', function(){ D.todos=D.todos.filter(function(x){return x.id!==id;}); save(); rTd(); rdash(); tst('Deleted'); }); }
+
+// ══════════════════════════════════════════
+// EXPENSES
+// ══════════════════════════════════════════
+function saveEx() {
+  var d = document.getElementById('ex-d').value.trim();
+  if(!d){ tst('⚠️ Please enter a description'); return; }
+  var dt = document.getElementById('ex-dt').value || new Date().toISOString().split('T')[0];
+  D.expenses.push({
+    id: Date.now(), desc: d,
+    amount: parseFloat(document.getElementById('ex-a').value)||0,
+    cat: document.getElementById('ex-c').value,
+    date: dt,
+    notes: document.getElementById('ex-no').value
+  });
+  save(); cF('exp'); cls(['ex-d','ex-a','ex-no']); rEx(); rdash(); tst('💰 Expense saved');
+}
+
+function rEx() {
+  var list = document.getElementById('ex-list');
+  var esum = document.getElementById('esum');
+  if(!D.expenses.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">No expenses recorded yet.<br>Start tracking your spending!</div></div>';
+    esum.style.display='none'; return;
+  }
+  var now = new Date(); var mon=now.getMonth(), yr=now.getFullYear();
+  var mo = D.expenses.filter(function(e){ var d=new Date(e.date); return d.getMonth()===mon&&d.getFullYear()===yr; });
+  var tot = mo.reduce(function(s,e){ return s+e.amount; }, 0);
+  document.getElementById('etot').textContent = '€'+tot.toFixed(2);
+  esum.style.display = 'block';
+  // Group by category for current month
+  var cats = {};
+  mo.forEach(function(e){ cats[e.cat]=(cats[e.cat]||0)+e.amount; });
+  var catSummary = Object.keys(cats).map(function(c){ return c+': €'+cats[c].toFixed(2); }).join(' · ');
+  list.innerHTML = '<div class="cs" style="margin-bottom:10px;font-size:11px">'+catSummary+'</div>'+
+    D.expenses.slice().reverse().map(function(e){
+      var catIcon = e.cat.split(' ')[0];
+      return '<div class="card"><div class="crow crow-top">'+
+        '<div class="ci" style="background:rgba(139,92,246,.1)">'+catIcon+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div class="ct">'+esc(e.desc)+'</div>'+
+          '<div class="cs">'+e.cat.replace(/^[^ ]+ /,'')+' · '+fd(e.date)+(e.notes?' · '+esc(e.notes):'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'+
+          '<div style="font-family:var(--fh);font-weight:700;font-size:14px">€'+e.amount.toFixed(2)+'</div>'+
+          '<button class="ib del" onclick="delEx('+e.id+')">Delete</button>'+
+        '</div></div></div>';
+    }).join('');
+}
+
+function delEx(id){ ask('Delete this expense?', function(){ D.expenses=D.expenses.filter(function(x){return x.id!==id;}); save(); rEx(); rdash(); tst('Deleted'); }); }
+
+// ══════════════════════════════════════════
+// FILES
+// ══════════════════════════════════════════
+function uploadF(input) {
+  var f = input.files[0]; if(!f) return;
+  D.files.push({id:Date.now(), name:f.name, type:f.type, size:f.size});
+  save(); input.value=''; rFiles(); tst('📁 File saved');
+}
+
+function rFiles() {
+  var list = document.getElementById('flist');
+  var emp = document.getElementById('femp');
+  if(!D.files.length){ list.innerHTML=''; emp.style.display='block'; return; }
+  emp.style.display='none';
+  list.innerHTML = D.files.map(function(f){
+    var ic = f.type.includes('pdf') ? '📄' : '🖼';
+    return '<div class="fc">'+
+      '<div class="fc-icon">'+ic+'</div>'+
+      '<div class="fc-name">'+esc(f.name)+'</div>'+
+      '<div class="fc-size">'+fsz(f.size)+'</div>'+
+      '<button class="ib del" style="margin-top:8px" onclick="delF('+f.id+')">Delete</button>'+
+    '</div>';
+  }).join('');
+}
+
+function delF(id){ ask('Remove this file?', function(){ D.files=D.files.filter(function(f){return f.id!==id;}); save(); rFiles(); tst('Removed'); }); }
+
+// ══════════════════════════════════════════
+// CHANGE PIN
+// ══════════════════════════════════════════
+function chgPin() {
+  var o=document.getElementById('pin-o').value;
+  var n=document.getElementById('pin-n').value;
+  var c=document.getElementById('pin-c').value;
+  var err=document.getElementById('pin-err');
+  err.style.display='none';
+  if(o!==PIN){ err.textContent='Current PIN is incorrect'; err.style.display='block'; return; }
+  if(!/^\d{4}$/.test(n)){ err.textContent='New PIN must be exactly 4 digits (numbers only)'; err.style.display='block'; return; }
+  if(n!==c){ err.textContent='PINs do not match, please try again'; err.style.display='block'; return; }
+  PIN = n; save(); cF('pin'); cls(['pin-o','pin-n','pin-c']);
+  document.getElementById('pinshow').textContent = '••••';
+  document.getElementById('pinshowbtn').textContent = 'Reveal';
+  tst('🔒 PIN updated successfully');
+}
+
+function tgPin(btn) {
+  var el = document.getElementById('pinshow');
+  if(el.textContent==='••••'){ el.textContent=PIN; btn.textContent='Hide'; }
+  else{ el.textContent='••••'; btn.textContent='Reveal'; }
+}
+
+// ══════════════════════════════════════════
+// REPORTS
+// ══════════════════════════════════════════
+function gRep(type) {
+  var now = new Date();
+  var L = [
+    '╔══════════════════════════════╗',
+    '║        MYVAULT REPORT        ║',
+    '╚══════════════════════════════╝',
+    'Generated: '+now.toLocaleDateString()+' '+now.toLocaleTimeString(),
+    ''
+  ];
+
+  if(type==='payments'||type==='all'){
+    L.push('━━━ 📅 PAYMENTS ━━━');
+    if(!D.payments.length){ L.push('  No payments recorded.'); }
+    else {
+      var today = new Date().toISOString().split('T')[0];
+      D.payments.forEach(function(p){
+        var status = p.paid ? '[PAID ✓]' : (p.date&&p.date<today ? '[OVERDUE!]' : '[DUE]');
+        L.push('  '+status+' '+p.name);
+        L.push('         €'+p.amount.toFixed(2)+(p.date?' · '+fd(p.date):'')+' · '+p.recur);
+        if(p.notes) L.push('         Note: '+p.notes);
+      });
+    }
+    L.push('');
+  }
+
+  if(type==='expenses'||type==='all'){
+    L.push('━━━ 💰 EXPENSES ━━━');
+    if(!D.expenses.length){ L.push('  No expenses recorded.'); }
+    else {
+      var mon=now.getMonth(), yr=now.getFullYear();
+      var mo = D.expenses.filter(function(e){ var d=new Date(e.date); return d.getMonth()===mon&&d.getFullYear()===yr; });
+      var tot = mo.reduce(function(s,e){ return s+e.amount; },0);
+      L.push('  This month total: €'+tot.toFixed(2));
+      L.push('');
+      D.expenses.slice().reverse().forEach(function(e){
+        L.push('  '+e.cat.replace(/^[^ ]+ /,'')+' | '+e.desc+' — €'+e.amount.toFixed(2)+' ('+fd(e.date)+')');
+        if(e.notes) L.push('    Note: '+e.notes);
+      });
+      L.push('  ─────────────────────────');
+      L.push('  ALL TIME TOTAL: €'+D.expenses.reduce(function(s,e){return s+e.amount;},0).toFixed(2));
+    }
+    L.push('');
+  }
+
+  if(type==='todos'||type==='all'){
+    L.push('━━━ ✅ TO-DO LIST ━━━');
+    if(!D.todos.length){ L.push('  No tasks recorded.'); }
+    else {
+      D.todos.forEach(function(t){
+        L.push('  ['+(t.done?'✓':' ')+'] '+t.text);
+        if(t.date) L.push('         Due: '+fd(t.date)+'  Priority: '+t.pri);
+        if(t.notes) L.push('         Note: '+t.notes);
+      });
+      var done=D.todos.filter(function(t){return t.done;}).length;
+      L.push('  ─────────────────────────');
+      L.push('  Completed: '+done+'/'+D.todos.length+' tasks');
+    }
+    L.push('');
+  }
+
+  L.push('══════════════════════════════');
+  L.push('Generated by MyVault App');
+
+  document.getElementById('rtxt').textContent = L.join('\n');
+  var rout = document.getElementById('rout');
+  rout.style.display = 'block';
+  tst('📊 Report generated');
+  setTimeout(function(){ rout.scrollIntoView({behavior:'smooth'}); }, 150);
+}
+
+function cpRep() {
+  var t = document.getElementById('rtxt').textContent;
+  if(navigator.clipboard){ navigator.clipboard.writeText(t); tst('📋 Copied to clipboard!'); }
+}
+
+function shRep() {
+  var t = document.getElementById('rtxt').textContent;
+  if(navigator.share){ navigator.share({title:'MyVault Report', text:t}); return; }
+  // Fallback: WhatsApp
+  window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(t.substring(0,1000)+'...'));
+}
+
+// ══════════════════════════════════════════
+// DATA EXPORT / IMPORT
+// ══════════════════════════════════════════
+function expD() {
+  var payload = {pin: PIN, data: D, exported: new Date().toISOString(), version: '2.0'};
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'myvault-backup-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  tst('✅ Backup exported!');
+}
+
+function impD(input) {
+  var f = input.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(e){
+    try {
+      var p = JSON.parse(e.target.result);
+      if(p.data){
+        D = p.data;
+        if(p.pin) PIN = p.pin;
+        save(); rdash(); rPw(); upStats();
+        tst('✅ Data imported successfully!');
+      } else { tst('⚠️ Invalid backup file'); }
+    } catch(err){ tst('⚠️ Could not read file'); }
+  };
+  r.readAsText(f);
+  input.value='';
+}
+
+function clrAll() {
+  ask('This will permanently delete ALL your data including passwords, payments, tasks, expenses and files. This CANNOT be undone!',
+    function(){
+      D = {passwords:[], payments:[], todos:[], expenses:[], files:[]};
+      save(); rdash(); upStats(); tst('All data cleared');
+    }, '⚠️'
+  );
+}
+
+function upStats() {
+  document.getElementById('stats').textContent =
+    D.passwords.length+' passwords · '+D.payments.length+' payments · '+
+    D.todos.length+' tasks · '+D.expenses.length+' expenses · '+D.files.length+' files';
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function rdash() {
+  document.getElementById('d-pw').textContent = D.passwords.length;
+  document.getElementById('d-pay').textContent = D.payments.filter(function(p){return !p.paid;}).length;
+  document.getElementById('d-td').textContent = D.todos.filter(function(t){return !t.done;}).length;
+  var now = new Date(); var mon=now.getMonth(), yr=now.getFullYear();
+  var mo = D.expenses.filter(function(e){ var d=new Date(e.date); return d.getMonth()===mon&&d.getFullYear()===yr; });
+  var tot = mo.reduce(function(s,e){ return s+e.amount; }, 0);
+  document.getElementById('d-ex').textContent = '€'+tot.toFixed(0);
+
+  var rec = [];
+  D.passwords.slice(-2).forEach(function(p){ rec.push({i:'🔑', t:'Password: '+p.name, s:''}); });
+  D.payments.slice(-2).forEach(function(p){ rec.push({i:'💳', t:p.name, s:'€'+p.amount.toFixed(2)+' · '+(p.paid?'Paid':'Pending')}); });
+  D.todos.slice(-2).forEach(function(t){ rec.push({i:'✅', t:t.text, s:t.done?'Done':'Pending'}); });
+  D.expenses.slice(-2).forEach(function(e){ rec.push({i:'💰', t:e.desc, s:'€'+e.amount.toFixed(2)}); });
+
+  var el = document.getElementById('d-rec');
+  if(!rec.length){
+    el.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-icon">✨</div><div class="empty-text">Nothing here yet!<br>Use the quick-add buttons above to get started.</div></div>';
+    return;
+  }
+  el.innerHTML = rec.slice(-6).reverse().map(function(r){
+    return '<div class="card" style="padding:10px 13px;margin-bottom:7px">'+
+      '<div class="crow">'+
+        '<span style="font-size:16px;flex-shrink:0">'+r.i+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;font-family:var(--fh);letter-spacing:-.1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.t)+'</div>'+(r.s?'<div class="cs">'+esc(r.s)+'</div>':'')+'</div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+var td = new Date().toISOString().split('T')[0];
+['pay-d','td-d','ex-dt'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=td; });
+
+// Close overlay on background tap
+document.querySelectorAll('.ov').forEach(function(ov){
+  ov.addEventListener('click', function(e){ if(e.target===ov){ var id=ov.id.replace('form-',''); cF(id); } });
+});
+document.getElementById('conf').addEventListener('click', function(e){ if(e.target===this) confNo(); });
+</script>
+</body>
+</html>
